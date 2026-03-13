@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회사에서 살아남기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&display=swap');
+
+:root {
+  --board-bg: #f5e6c8;
+  --board-border: #8b6914;
+  --board-line: #c9a227;
+  --accent: #e84444;
+  --gold: #ffd700;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nanum Gothic', sans-serif;
+  background: #87CEEB;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* ── 배경 ── */
+.bg-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  background: linear-gradient(180deg, #c9e8f5 0%, #87CEEB 35%, #a8d8a8 58%, #5a9e4a 72%, #4a8a3a 100%);
+}
+.cloud { position: absolute; }
+.c1 { top:5%;  left:-100px; animation: floatCloud 28s linear infinite; }
+.c2 { top:12%; left:-100px; animation: floatCloud 22s linear infinite 7s; }
+.c3 { top:3%;  left:-100px; animation: floatCloud 35s linear infinite 14s; }
+@keyframes floatCloud { from{left:-120px} to{left:110vw} }
+.mountain-wrap { position:absolute; bottom:27%; left:0; right:0; display:flex; justify-content:space-around; pointer-events:none; }
+.mtn { width:0; height:0; border-left:solid transparent; border-right:solid transparent; border-bottom:solid; opacity:.75; }
+.mtn1 { border-left-width:70px; border-right-width:70px; border-bottom-width:110px; border-bottom-color:#7c9ab5; }
+.mtn2 { border-left-width:95px; border-right-width:95px; border-bottom-width:145px; border-bottom-color:#6b8fa3; margin-top:35px; }
+.mtn3 { border-left-width:55px; border-right-width:55px; border-bottom-width:90px;  border-bottom-color:#8fafc5; }
+.tree-row { position:absolute; bottom:25%; left:0; right:0; display:flex; justify-content:space-evenly; pointer-events:none; }
+.tree { display:flex; flex-direction:column; align-items:center; }
+.tree-top { width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-bottom:20px solid #2d7a2d; }
+.tree-trunk { width:6px; height:10px; background:#7a4a1a; }
+.house-row { position:absolute; bottom:25%; display:flex; gap:16px; pointer-events:none; }
+.hr-left { left:1%; } .hr-right { right:1%; }
+.house { display:flex; flex-direction:column; align-items:center; }
+.house-roof { width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent; border-bottom:14px solid #c0392b; }
+.house-body { width:24px; height:18px; background:#f0d9a0; border:2px solid #8b6914; position:relative; }
+.house-win  { position:absolute; width:7px; height:7px; background:#87CEEB; border:1px solid #555; top:3px; left:2px; }
+.house-door { position:absolute; width:7px; height:10px; background:#8b4513; bottom:0; right:2px; }
+
+/* ── 레이아웃 ── */
+.game-wrap {
+  position:relative; z-index:10;
+  display:flex; flex-direction:column; align-items:center;
+  padding:8px 10px 4px;
+  width:100%; max-width:1100px;
+}
+
+/* ── 타이틀 ── */
+.title-block { text-align:center; margin-bottom:6px; }
+.title-main {
+  font-family:'Jua',sans-serif;
+  font-size:clamp(22px,4vw,38px);
+  color:#fff;
+  text-shadow: 3px 3px 0 #8b1a1a, -2px -2px 0 #8b1a1a, 2px -2px 0 #8b1a1a, -2px 2px 0 #8b1a1a, 0 4px 14px rgba(0,0,0,.4);
+  letter-spacing:2px;
+  display:inline-block;
+  animation:titleBounce 2.5s ease-in-out infinite;
+}
+.title-main span { color:var(--gold); }
+.title-sub { font-family:'Do Hyeon',sans-serif; font-size:11px; color:#fff8dc; letter-spacing:3px; text-shadow:1px 1px 3px rgba(0,0,0,.5); }
+.title-emoji { font-size:22px; animation:spin 4s linear infinite; display:inline-block; }
+@keyframes titleBounce { 0%,100%{transform:translateY(0) rotate(-1deg)} 50%{transform:translateY(-4px) rotate(1deg)} }
+@keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+.main-row { display:flex; gap:10px; align-items:flex-start; width:100%; }
+
+/* ── 보드 ── */
+.board-container { position:relative; flex:1; min-width:0; }
+
+.board {
+  background:var(--board-bg);
+  border:5px solid var(--board-border);
+  border-radius:14px;
+  padding:6px;
+  box-shadow: 0 0 0 3px var(--board-line), 0 8px 32px rgba(0,0,0,.35), inset 0 0 20px rgba(200,160,30,.2);
+  position:relative;
+}
+
+.cells-grid {
+  display:grid;
+  grid-template-columns:repeat(10, 1fr);
+  grid-template-rows:repeat(10, 1fr);
+  gap:3px;
+  aspect-ratio:1;
+}
+
+.cell {
+  border-radius:7px;
+  border:2px solid var(--board-border);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  position:relative;
+  overflow:hidden;
+  transition:transform .15s, box-shadow .15s;
+  cursor:default;
+  box-shadow:0 2px 4px rgba(0,0,0,.12), inset 0 1px 2px rgba(255,255,255,.4);
+}
+.cell:not(.empty):hover { transform:scale(1.07); z-index:2; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+.cell.empty {
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  pointer-events:none;
+}
+
+.cell-normal   { background:linear-gradient(135deg,#fff8e7,#fdecc8); }
+.cell-coffee   { background:linear-gradient(135deg,#6f4e37,#a0522d); color:#fff; }
+.cell-boss     { background:linear-gradient(135deg,#c0392b,#922b21); color:#fff; }
+.cell-overtime { background:linear-gradient(135deg,#1a1a2e,#16213e); color:#fff; }
+.cell-lucky    { background:linear-gradient(135deg,#145a32,#1e8449); color:#fff; }
+.cell-start    { background:linear-gradient(135deg,#ffd700,#ffa500); }
+.cell-wfh      { background:linear-gradient(135deg,#1a237e,#283593); color:#fff; }
+.cell-salary   { background:linear-gradient(135deg,#1b5e20,#2e7d32); color:#fff; }
+.cell-meeting  { background:linear-gradient(135deg,#880e4f,#ad1457); color:#fff; }
+.cell-vacation { background:linear-gradient(135deg,#0277bd,#0288d1); color:#fff; }
+
+.cell-num {
+  font-family:'Jua',sans-serif; font-size:clamp(6px,1vw,9px);
+  color:rgba(0,0,0,.35);
+  position:absolute; top:2px; left:3px; line-height:1;
+}
+.cell-coffee .cell-num,.cell-boss .cell-num,.cell-overtime .cell-num,
+.cell-lucky .cell-num,.cell-wfh .cell-num,.cell-salary .cell-num,
+.cell-meeting .cell-num,.cell-vacation .cell-num { color:rgba(255,255,255,.5); }
+
+.cell-icon  { font-size:clamp(11px,2vw,20px); line-height:1; }
+.cell-label { font-size:clamp(5px,.9vw,8px); font-weight:800; text-align:center; line-height:1.2; padding:0 2px; margin-top:1px; }
+.start-badge { font-family:'Jua',sans-serif; font-size:clamp(5px,.9vw,8px); color:#5a3008; background:linear-gradient(135deg,#ffd700,#ffa500); border-radius:4px; padding:1px 4px; border:1px solid #8b6914; }
+
+/* ── 보드 중앙 메시지 영역 ── */
+.board-center {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:calc(80% - 12px); height:calc(80% - 12px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:12px;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+/* 기본 배경 (대기 상태) */
+.board-center-bg {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at center, #e8f5e9 0%, #c8e6c9 60%, #a5d6a7 100%);
+  border:2px dashed #4caf50;
+  border-radius:12px;
+  transition:opacity .4s ease;
+}
+
+/* 이벤트 배경 레이어 */
+.board-center-event-bg {
+  position:absolute; inset:0;
+  border-radius:12px;
+  opacity:0;
+  transition:opacity .4s ease;
+}
+
+/* 기본 대기 컨텐츠 */
+.center-idle {
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:5px; text-align:center;
+  transition:opacity .3s ease;
+}
+
+/* 이벤트 메시지 컨텐츠 */
+.center-msg {
+  position:absolute; inset:0; z-index:3;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:14px;
+  opacity:0; pointer-events:all;
+  transition:opacity .35s ease;
+}
+.center-msg.visible { opacity:1; }
+
+.msg-event-icon {
+  font-size:clamp(28px,5vw,44px);
+  animation:iconPop .5s cubic-bezier(.34,1.56,.64,1);
+  line-height:1;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));
+}
+@keyframes iconPop { from{transform:scale(0) rotate(-15deg)} to{transform:scale(1) rotate(0)} }
+
+.msg-event-title {
+  font-family:'Jua',sans-serif;
+  font-size:clamp(13px,2vw,19px);
+  color:#fff;
+  text-shadow:0 2px 6px rgba(0,0,0,.5);
+  line-height:1.2;
+}
+
+.msg-effect-badge {
+  display:inline-flex; align-items:center;
+  background:rgba(255,255,255,.22);
+  backdrop-filter:blur(4px);
+  border:1.5px solid rgba(255,255,255,.45);
+  border-radius:20px;
+  padding:3px 12px;
+  font-family:'Jua',sans-serif;
+  font-size:clamp(9px,1.4vw,12px);
+  color:#fff;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+
+/* 말풍선 스타일 멘트 */
+.msg-quote-bubble {
+  position:relative;
+  background:rgba(255,255,255,.93);
+  border-radius:14px;
+  padding:8px 12px;
+  max-width:92%;
+  border:2px solid rgba(255,255,255,.6);
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+}
+.msg-quote-bubble::before {
+  content:'💭';
+  position:absolute;
+  top:-14px; left:12px;
+  font-size:18px;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));
+}
+.msg-quote-text {
+  font-family:'Jua',sans-serif;
+  font-size:clamp(9px,1.5vw,13px);
+  color:#3d2b00;
+  line-height:1.55;
+  text-align:center;
+}
+
+
+
+/* 컨페티 레이어 */
+.center-confetti { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:12px; z-index:4; }
+
+/* ── 사이드 ── */
+.side-panel { width:178px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+.side-panel .panel-card { display:flex; flex-direction:column; }
+
+.panel-card {
+  background:rgba(255,255,255,.9);
+  backdrop-filter:blur(6px);
+  border-radius:12px; border:2px solid var(--board-border);
+  padding:8px 10px;
+  box-shadow:0 4px 14px rgba(0,0,0,.13);
+}
+.panel-title { font-family:'Jua',sans-serif; font-size:12px; color:#5a3008; margin-bottom:5px; display:flex; align-items:center; gap:3px; }
+
+.stat-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; font-size:10px; }
+.stat-label { color:#555; font-weight:700; }
+.stat-bar-wrap { flex:1; height:7px; background:#e0d0b0; border-radius:4px; margin:0 5px; overflow:hidden; }
+.stat-bar { height:100%; border-radius:4px; transition:width .5s ease; }
+.bar-stamina { background:linear-gradient(90deg,#27ae60,#2ecc71); }
+.bar-stress  { background:linear-gradient(90deg,#e74c3c,#ff6b6b); }
+.bar-money   { background:linear-gradient(90deg,#f39c12,#ffd700); }
+.stat-val { font-weight:800; font-size:9px; min-width:22px; text-align:right; }
+
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.info-box { background:linear-gradient(135deg,#fff8e7,#fdecc8); border-radius:7px; border:1.5px solid #c9a227; padding:5px; text-align:center; }
+.info-box-val { font-family:'Jua',sans-serif; font-size:18px; color:#8b1a1a; }
+.info-box-lbl { font-size:8px; color:#888; font-weight:700; }
+
+.dice-area { text-align:center; }
+.dice-btn {
+  width:62px; height:62px;
+  background:linear-gradient(145deg,#fff,#f0e6d0);
+  border:3px solid var(--board-border);
+  border-radius:12px; font-size:32px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  margin:0 auto 5px;
+  box-shadow:0 4px 10px rgba(0,0,0,.18), inset 0 1px 3px rgba(255,255,255,.9);
+  transition:transform .1s, box-shadow .1s;
+}
+.dice-btn:hover { transform:scale(1.08); box-shadow:0 6px 16px rgba(0,0,0,.25); }
+.dice-btn:active { transform:scale(.94); }
+.dice-btn.rolling { animation:diceRoll .7s cubic-bezier(.36,.07,.19,.97); }
+@keyframes diceRoll {
+  0%{transform:rotate(0)scale(1)} 15%{transform:rotate(-30deg)scale(1.15)}
+  35%{transform:rotate(25deg)scale(.9)} 55%{transform:rotate(-18deg)scale(1.1)}
+  75%{transform:rotate(12deg)scale(.95)} 90%{transform:rotate(-5deg)scale(1.05)} 100%{transform:rotate(0)scale(1)}
+}
+.dice-hint { font-size:9px; color:#888; }
+
+.legend { display:flex; flex-wrap:wrap; gap:3px; }
+.legend-item { display:flex; align-items:center; gap:2px; background:rgba(255,255,255,.7); border-radius:5px; padding:2px 5px; border:1px solid #e0c870; font-size:8px; font-weight:700; }
+.legend-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+
+.log-list { list-style:none; font-size:9px; max-height:80px; overflow-y:auto; }
+.log-list li { padding:2px 0; border-bottom:1px solid #f0e0c0; color:#555; }
+.log-list li:last-child { color:#8b1a1a; font-weight:800; }
+.log-list::-webkit-scrollbar { width:3px; }
+.log-list::-webkit-scrollbar-thumb { background:#c9a227; border-radius:2px; }
+
+/* ── 플레이어 ── */
+.player-char {
+  position:absolute; width:34px; height:34px; z-index:20;
+  transform:translate(-50%,-50%); pointer-events:none;
+  transition:top .45s cubic-bezier(.34,1.56,.64,1), left .45s cubic-bezier(.34,1.56,.64,1);
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));
+}
+.player-char svg { width:100%; height:100%; }
+@keyframes playerDance {
+  0%,100%{transform:translate(-50%,-50%)scale(1)rotate(0)}
+  25%{transform:translate(-50%,-50%)scale(1.1)rotate(-8deg)}
+  50%{transform:translate(-50%,-50%)scale(1.15)rotate(0)}
+  75%{transform:translate(-50%,-50%)scale(1.1)rotate(8deg)}
+}
+.player-char.dancing { animation:playerDance .6s ease-in-out infinite !important; }
+
+/* ── 이벤트 오버레이 ── */
+.event-overlay { position:fixed; inset:0; z-index:90; pointer-events:none; overflow:hidden; }
+.event-flash { position:absolute; inset:0; animation:flash .4s ease-out; pointer-events:none; }
+@keyframes flash { 0%{opacity:.5} 100%{opacity:0} }
+.particle { position:absolute; pointer-events:none; border-radius:50%; animation:particleFly .8s ease-out forwards; }
+@keyframes particleFly { from{transform:translate(0,0)scale(1);opacity:1} to{transform:translate(var(--dx),var(--dy))scale(0);opacity:0} }
+
+/* ── 상사 등장 ── */
+.boss-appear { position:fixed; top:0; left:0; width:100%; height:100%; z-index:95; pointer-events:none; display:none; }
+.boss-appear.active { display:block; }
+.boss-left,.boss-right { position:absolute; width:68px; height:68px; top:50%; transform:translateY(-50%); }
+.boss-left  { animation:bossFromLeft  1.2s ease-in-out forwards; }
+.boss-right { animation:bossFromRight 1.2s ease-in-out forwards; }
+@keyframes bossFromLeft  { 0%{left:-80px} 40%{left:35%} 100%{left:35%} }
+@keyframes bossFromRight { 0%{right:-80px} 40%{right:35%} 100%{right:35%} }
+.boss-player-center { position:absolute; width:52px; height:52px; top:50%; left:50%; transform:translate(-50%,-50%); animation:playerSquirm 1.2s ease-in-out; }
+@keyframes playerSquirm { 0%,100%{transform:translate(-50%,-50%)rotate(0)} 25%{transform:translate(-50%,-50%)rotate(-8deg)} 50%{transform:translate(-50%,-50%)rotate(8deg)} 75%{transform:translate(-50%,-50%)rotate(-5deg)} }
+
+.move-trail { position:absolute; inset:0; border-radius:5px; background:rgba(255,215,0,.3); animation:trailFade .6s ease-out forwards; pointer-events:none; z-index:1; }
+@keyframes trailFade { from{opacity:1} to{opacity:0} }
+
+/* ── 태블릿 ── */
+@media (max-width:820px) {
+  .game-wrap { padding:6px 8px 4px; }
+  .side-panel { width:155px; }
+  .dice-btn { width:54px; height:54px; font-size:27px; }
+  .info-box-val { font-size:15px; }
+}
+
+/* ── 모바일 가로 / 소형 태블릿 ── */
+@media (max-width:640px) {
+  .title-main { font-size:20px; letter-spacing:1px; }
+  .title-sub  { font-size:9px; letter-spacing:2px; }
+  .title-emoji { font-size:17px; }
+  .main-row { flex-direction:column; align-items:stretch; gap:8px; }
+  .board-container { width:100%; }
+  .side-panel {
+    width:100%;
+    flex-direction:row; flex-wrap:wrap; gap:6px;
+    display:flex;
+  }
+  .panel-card { flex:1; min-width:calc(50% - 6px); padding:6px 8px; }
+  .dice-area { display:flex; flex-direction:column; align-items:center; }
+  .dice-btn { width:48px; height:48px; font-size:24px; }
+  .info-box-val { font-size:16px; }
+  .legend { gap:2px; }
+  .legend-item { font-size:7px; padding:2px 4px; }
+  .log-list { max-height:60px; }
+}
+
+/* ── 모바일 세로 ── */
+@media (max-width:430px) {
+  .game-wrap { padding:5px 5px 2px; }
+  .title-main { font-size:17px; }
+  .title-emoji { font-size:14px; }
+  .title-sub { font-size:8px; letter-spacing:1px; }
+  .board { padding:4px; }
+  .cells-grid { gap:2px; }
+  .cell { border-radius:5px; border-width:1.5px; }
+  .cell-icon  { font-size:10px; }
+  .cell-label { font-size:5px; }
+  .cell-num   { font-size:5.5px; }
+  .start-badge { font-size:5px; padding:1px 2px; }
+
+  /* 보드 중앙 메시지 */
+  .msg-event-icon  { font-size:26px; }
+  .msg-event-title { font-size:12px; }
+  .msg-effect-badge { font-size:9px; padding:2px 8px; }
+  .msg-quote-bubble { padding:6px 8px; }
+  .msg-quote-text  { font-size:10px; }
+  .board-center > .center-idle > div:first-child { font-size:26px; }
+
+  /* 사이드 패널 */
+  .panel-card { min-width:calc(50% - 5px); padding:5px 7px; }
+  .panel-title { font-size:10px; margin-bottom:3px; }
+  .stat-row { font-size:9px; }
+  .stat-bar-wrap { height:6px; }
+  .info-box-val { font-size:14px; }
+  .info-box-lbl { font-size:7px; }
+  .dice-btn { width:44px; height:44px; font-size:22px; }
+  .dice-hint { font-size:8px; }
+  .legend-item { font-size:6.5px; }
+  .log-list { font-size:8px; max-height:50px; }
+}
+
+/* ── 아주 작은 화면 (320px) ── */
+@media (max-width:340px) {
+  .title-main { font-size:14px; }
+  .panel-card { min-width:100%; }
+  .cell-icon { font-size:9px; }
+  .cell-label,.cell-num { display:none; }
+  .start-badge { font-size:5px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="cloud c1"><svg width="90" height="38" viewBox="0 0 90 38"><rect x="22" y="22" width="46" height="12" fill="#fff"/><rect x="10" y="14" width="28" height="20" fill="#fff"/><rect x="52" y="12" width="26" height="22" fill="#fff"/><rect x="30" y="8" width="30" height="24" fill="#fff"/></svg></div>
+  <div class="cloud c2"><svg width="70" height="30" viewBox="0 0 70 30"><rect x="16" y="18" width="38" height="10" fill="#fff"/><rect x="8" y="12" width="22" height="16" fill="#fff"/><rect x="40" y="10" width="22" height="18" fill="#fff"/><rect x="24" y="6" width="22" height="18" fill="#fff"/></svg></div>
+  <div class="cloud c3"><svg width="100" height="42" viewBox="0 0 100 42"><rect x="26" y="26" width="48" height="14" fill="#fff"/><rect x="12" y="16" width="32" height="24" fill="#fff"/><rect x="58" y="14" width="28" height="26" fill="#fff"/><rect x="34" y="8" width="32" height="26" fill="#fff"/></svg></div>
+  <div class="mountain-wrap">
+    <div class="mtn mtn3"></div><div class="mtn mtn1"></div><div class="mtn mtn2"></div><div class="mtn mtn1"></div><div class="mtn mtn3"></div>
+  </div>
+  <div class="tree-row">
+    <div class="tree"><div class="tree-top"></div><div class="tree-top" style="margin-top:-6px;border-bottom-color:#1e5c1e"></div><div class="tree-trunk"></div></div>
+    <div class="tree"><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree"><div class="tree-top"></div><div class="tree-top" style="margin-top:-5px;border-bottom-color:#1e5c1e;border-left-width:9px;border-right-width:9px"></div><div class="tree-trunk"></div></div>
+    <div class="tree"><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree"><div class="tree-top"></div><div class="tree-top" style="margin-top:-6px;border-bottom-color:#1e5c1e"></div><div class="tree-trunk"></div></div>
+  </div>
+  <div class="house-row hr-left">
+    <div class="house"><div class="house-roof"></div><div class="house-body"><div class="house-win"></div><div class="house-door"></div></div></div>
+    <div class="house"><div class="house-roof" style="border-bottom-color:#2c7bb6"></div><div class="house-body" style="background:#d5e8f5"><div class="house-win"></div><div class="house-door"></div></div></div>
+  </div>
+  <div class="house-row hr-right">
+    <div class="house"><div class="house-roof" style="border-bottom-color:#7d3c98"></div><div class="house-body"><div class="house-win"></div><div class="house-door"></div></div></div>
+    <div class="house"><div class="house-roof"></div><div class="house-body"><div class="house-win"></div><div class="house-door"></div></div></div>
+  </div>
+</div>
+
+<div class="event-overlay" id="eventOverlay"></div>
+
+<!-- 상사 등장 -->
+<div class="boss-appear" id="bossAppear">
+  <div class="boss-left" id="bossLeft">
+    <svg viewBox="0 0 40 55" xmlns="http://www.w3.org/2000/svg">
+      <rect x="13" y="38" width="6" height="14" rx="2" fill="#263238"/><rect x="21" y="38" width="6" height="14" rx="2" fill="#263238"/>
+      <rect x="12" y="18" width="16" height="22" rx="3" fill="#37474f"/>
+      <rect x="18" y="20" width="4" height="14" fill="#e53935"/>
+      <rect x="9" y="19" width="7" height="16" rx="2" fill="#37474f"/><rect x="24" y="19" width="7" height="16" rx="2" fill="#37474f"/>
+      <ellipse cx="20" cy="10" rx="9" ry="10" fill="#ffe0b2"/>
+      <circle cx="16" cy="9" r="1.5" fill="#333"/><circle cx="24" cy="9" r="1.5" fill="#333"/>
+      <path d="M16 14 Q20 17 24 14" stroke="#c0392b" stroke-width="1.5" fill="none"/>
+      <rect x="11" y="0" width="18" height="8" rx="3" fill="#1a1a2e"/>
+    </svg>
+  </div>
+  <div class="boss-player-center" id="bossPlayer"></div>
+  <div class="boss-right" id="bossRight">
+    <svg viewBox="0 0 40 55" xmlns="http://www.w3.org/2000/svg">
+      <rect x="13" y="38" width="6" height="14" rx="2" fill="#0d47a1"/><rect x="21" y="38" width="6" height="14" rx="2" fill="#0d47a1"/>
+      <rect x="12" y="18" width="16" height="22" rx="3" fill="#1565c0"/>
+      <rect x="18" y="20" width="4" height="14" fill="#ffd700"/>
+      <rect x="9" y="19" width="7" height="16" rx="2" fill="#1565c0"/><rect x="24" y="19" width="7" height="16" rx="2" fill="#1565c0"/>
+      <ellipse cx="20" cy="10" rx="9" ry="10" fill="#ffe0b2"/>
+      <circle cx="16" cy="9" r="1.5" fill="#333"/><circle cx="24" cy="9" r="1.5" fill="#333"/>
+      <path d="M16 14 Q20 16 24 14" stroke="#c0392b" stroke-width="1.5" fill="none"/>
+      <rect x="11" y="0" width="18" height="8" rx="3" fill="#4a0080"/>
+    </svg>
+  </div>
+</div>
+
+<div class="game-wrap">
+  <div class="title-block">
+    <div class="title-main">
+      <span class="title-emoji">⚡</span> 회사에서 <span>살아남기</span> <span class="title-emoji">⚡</span>
+    </div>
+    <div class="title-sub">✦ 직장인 보드게임 생존 시뮬레이터 ✦</div>
+  </div>
+
+  <div class="main-row">
+    <div class="board-container">
+      <div class="board">
+        <div class="cells-grid" id="cellsGrid"></div>
+
+        <!-- 보드 중앙 메시지 영역 -->
+        <div class="board-center" id="boardCenter">
+          <div class="board-center-bg" id="centerBg"></div>
+          <div class="board-center-event-bg" id="centerEventBg"></div>
+          <div class="center-confetti" id="centerConfetti"></div>
+
+          <!-- 대기 화면 -->
+          <div class="center-idle" id="centerIdle">
+            <div style="font-size:clamp(22px,5vw,44px)">🏢</div>
+            <div style="font-family:'Jua',sans-serif;font-size:clamp(9px,1.8vw,14px);color:#2d7a2d;text-align:center">우리 회사 지옥탈출구?</div>
+            <div style="font-size:clamp(7px,1.2vw,11px);color:#888;text-align:center;margin-top:2px">🌿 속으로만 퇴사 중 🌿</div>
+            <div style="font-size:clamp(6px,1.1vw,10px);color:#aaa;margin-top:4px">🎲 주사위를 굴려봐!</div>
+          </div>
+
+          <!-- 이벤트 메시지 -->
+          <div class="center-msg" id="centerMsg">
+            <div class="msg-event-icon" id="msgIcon">💼</div>
+            <div class="msg-event-title" id="msgTitle">이벤트!</div>
+            <div class="msg-effect-badge" id="msgEffect">효과</div>
+            <div class="msg-quote-bubble">
+              <div class="msg-quote-text" id="msgQuote">멘트</div>
+            </div>
+            <div style="font-family:'Jua',sans-serif;font-size:clamp(8px,1.2vw,11px);color:rgba(255,255,255,.7);margin-top:2px;letter-spacing:.5px;">🎲 주사위를 굴려 다음으로!</div>
+          </div>
+        </div>
+      </div>
+      <div class="player-char" id="playerChar"></div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel-card" style="order:2">
+        <div class="panel-title">📋 현황판</div>
+        <div class="info-grid">
+          <div class="info-box"><div class="info-box-val" id="turnNum">1</div><div class="info-box-lbl">턴</div></div>
+          <div class="info-box"><div class="info-box-val" id="posNum">0</div><div class="info-box-lbl">칸</div></div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="order:3">
+        <div class="panel-title">📊 직장인 스탯</div>
+        <div class="stat-row"><span class="stat-label">체력</span><div class="stat-bar-wrap"><div class="stat-bar bar-stamina" id="barStamina" style="width:80%"></div></div><span class="stat-val" id="valStamina">80</span></div>
+        <div class="stat-row"><span class="stat-label">스트레스</span><div class="stat-bar-wrap"><div class="stat-bar bar-stress" id="barStress" style="width:20%"></div></div><span class="stat-val" id="valStress">20</span></div>
+        <div class="stat-row"><span class="stat-label">월급</span><div class="stat-bar-wrap"><div class="stat-bar bar-money" id="barMoney" style="width:50%"></div></div><span class="stat-val" id="valMoney">50</span></div>
+      </div>
+
+      <div class="panel-card dice-area" style="order:1">
+        <div class="panel-title">🎲 주사위</div>
+        <button class="dice-btn" id="diceBtn" onclick="rollDice()">🎲</button>
+        <div class="dice-hint" id="diceHint">클릭해서 굴려요!</div>
+      </div>
+
+      <div class="panel-card" style="order:4">
+        <div class="panel-title">🗺️ 칸 안내</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#c8a228"></div>일반</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div>START</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#6f4e37"></div>커피수혈</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div>상사호출</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a1a2e"></div>야근확정</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#145a32"></div>행운</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a237e"></div>재택근무</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1b5e20"></div>월급날</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#880e4f"></div>회의폭탄</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#0277bd"></div>연차</div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="order:5">
+        <div class="panel-title">📝 활동 로그</div>
+        <ul class="log-list" id="logList"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 보드 정의 ───────────────────────────────────────────────────────────────
+function gridPos(r,c){ return r*10+c; }
+const MOVE_ORDER = [];
+for(let c=0;c<=9;c++) MOVE_ORDER.push(gridPos(0,c));
+for(let r=1;r<=8;r++) MOVE_ORDER.push(gridPos(r,9));
+for(let c=8;c>=0;c--) MOVE_ORDER.push(gridPos(9,c));
+for(let r=8;r>=1;r--) MOVE_ORDER.push(gridPos(r,0));
+const TOTAL_MOVES = MOVE_ORDER.length; // 36
+
+const CELL_TYPES_SEQ = [
+  'start','normal','coffee','normal','boss','normal','wfh','overtime','normal','lucky',
+  'coffee','normal','meeting','boss','normal','salary','normal','lucky',
+  'normal','overtime','wfh','normal','boss','coffee','normal','meeting','normal','normal',
+  'vacation','normal','lucky','boss','normal','overtime','coffee','salary',
+];
+
+const CELL_ICONS_MAP = {
+  start:'🏁', coffee:'☕', boss:'😤', overtime:'😭', lucky:'🍀',
+  wfh:'🏠', salary:'💰', meeting:'📢', vacation:'🌴',
+};
+const NORMAL_ICONS = ['💻','📊','📝','🍱','📎','🖨️','📞','🗂️','📬','🔧','📋','💡'];
+const CELL_LABELS_MAP = {
+  start:'START', coffee:'커피수혈', boss:'상사호출', overtime:'야근확정',
+  lucky:'행운칸', wfh:'재택근무', salary:'월급날', meeting:'회의폭탄', vacation:'연차발생',
+};
+const CELL_COLORS_MAP = {
+  start:'cell-start', normal:'cell-normal', coffee:'cell-coffee', boss:'cell-boss',
+  overtime:'cell-overtime', lucky:'cell-lucky', wfh:'cell-wfh',
+  salary:'cell-salary', meeting:'cell-meeting', vacation:'cell-vacation',
+};
+
+function isEdge(idx){ const r=Math.floor(idx/10),c=idx%10; return r===0||r===9||c===0||c===9; }
+
+// ─── 이벤트별 배경 그라디언트 ───────────────────────────────────────────────
+const EVENT_BG = {
+  start:    'linear-gradient(135deg,#ffd700,#ff8c00)',
+  normal:   'linear-gradient(135deg,#667eea,#764ba2)',
+  coffee:   'linear-gradient(135deg,#6f4e37,#c8860a)',
+  boss:     'linear-gradient(135deg,#c0392b,#6b0a0a)',
+  overtime: 'linear-gradient(135deg,#0d0d2b,#1a1a4e)',
+  lucky:    'linear-gradient(135deg,#11998e,#38ef7d)',
+  wfh:      'linear-gradient(135deg,#1a237e,#5c6bc0)',
+  salary:   'linear-gradient(135deg,#1b5e20,#76b852)',
+  meeting:  'linear-gradient(135deg,#880e4f,#d81b60)',
+  vacation: 'linear-gradient(135deg,#0277bd,#00bcd4)',
+};
+
+// ─── 멘트 데이터 ─────────────────────────────────────────────────────────────
+const QUOTES = {
+  start:[
+    "또 왔네... 내 발이 기억하는 길...",
+    "출발! 라고 쓰고 '또 이 짓이야' 라고 읽는다",
+    "한 바퀴 더? 삶이란 이런 거죠 뭐",
+    "시작점에 서니 약간 감동적... 이라고 착각",
+    "GO! 라는 표지판, 정작 가고 싶은 곳은 집",
+    "오늘도 회사에 로그인 완료.",
+    "출근 = 인생 하드모드",
+  ],
+  normal:[
+    "ctrl+S 하루에 300번... 내 인생도 저장되나요?",
+    "모니터 밝기 최대로 켜도 미래는 안 보인다ㅎ",
+    "코드 에러남. 나도 에러남. 둘 다 원인불명",
+    "엑셀 함수가 내 인생보다 논리적이다",
+    "VLOOKUP의 달인이 됐는데 이게 자랑인지 모르겠음",
+    "회의 중 '다들 의견 없으세요?'→ (모두 속으로: 퇴근하고 싶어요)",
+    "3시간 회의, 결론: 다음주에 또 회의하자",
+    "점심 메뉴 고민 10분, 먹는 시간 5분, 후회 5분",
+    "편의점 도시락... 풍요로운 듯 슬픈 식사",
+    "내 통장잔고랑 오늘 점심값이 비슷한 것 같아",
+    "IDE 탭 27개. 뇌 탭 0개. 심각한 불균형",
+    "디버깅 3시간. 원인: 세미콜론 하나. 퇴사각",
+    "오늘도 무사히... 라고 쓰고 '겨우' 라고 읽는다",
+    "팀장님 칭찬 = 더 많은 일의 서막",
+    "내 책상만 보면 왜 이리 집 같은 거야... 슬프다",
+    "네~ 제가요? 아 제가... 예.. (안 함)",
+    "월급은 스쳐 지나갈 뿐, 고통은 영원하다.",
+    "출근했는데 퇴근하고 싶다. 이게 맞냐?",
+    "오늘 점심 뭐 먹지? 이게 오늘 유일한 의사결정임.",
+    "금융치료가 시급합니다. 대표님 보고 계세요?",
+    "협의된 바 없습니다. (사실 기억 안 남)",
+    "자아 실현은 집에서 할게요. 여기선 월급 실현만.",
+    "출근했는데 이미 퇴근하고 싶다",
+    "회의는 왜 항상 늘어날까",
+    "일은 했는데 기억이 없음.",
+    "회의만 했는데 하루 끝남.",
+    "오늘도 성장: 인내력 +1",
+    "회사 NPC 생활 3년차.",
+    "월요일은 버그다.",
+    "퇴근 생각으로 CPU 유지중",
+    "회사 와이파이보다 내 의지가 더 약함",
+    "일하는 척 스킬 쿨타임 돌입",
+    "회사: 체력 -20",
+    "오늘도 영혼은 재택근무중",
+    "이메일 알림 = 심장 공격",
+    "퇴근 30분 전이 제일 열심히 일함",
+    "나도 모르게 '넵' 자동응답",
+    "내 꿈은 건물주였는데",
+    "출근 = 인생 하드모드",
+    "그래도 월급날은 사랑함",
+  ],
+  coffee:[
+    "☕ 카페인이 내 혈관에 퍼진다... 이제 인간임",
+    "커피 없이는 오전을 보장 못 함 (약관 있음)",
+    "오늘 세 번째 커피. 심장이 박자 연습 중",
+    "커피 한 잔에 오늘 하루 견딤. 가성비 갑",
+    "아이스 아메리카노는 직장인의 수액이다",
+    "카페인 충전 완료 🔋 배터리 100% (잠깐만요)",
+    "커피 없으면 게임오버",
+  ],
+  boss:[
+    "상사: '잠깐 와봐요~' / 나: (신나게 관뚜껑 닫음)",
+    "호출 받는 순간 뇌에서 자동으로 핑계 목록 생성됨",
+    "상사님 목소리만 들어도 혈압이 자동으로 세팅됨",
+    "비상비상! 표정은 침착, 속은 탈출 계획 중",
+    "팀장님 호출 = 이번 주말도 안녕 👋",
+    "들어가기 전에 심호흡 세 번. 이게 직장인 명상임",
+    "상사는 보스 몬스터",
+  ],
+  overtime:[
+    "야근이 확정된 순간 시간이 느려지는 기현상 발생",
+    "저녁은 회사에서 먹겠군... 복지의 한 형태겠지(강제)",
+    "6시를 넘기는 순간 나는 이미 다른 사람이 됨",
+    "야근수당은 없지만 팀장님의 '고생했어요'는 드립니다",
+    "집에 가는 길을 잊어버릴 것 같다... 지도 켜야지",
+    "야근 3일 연속. 나는 지금 회사의 인테리어가 되고 있음",
+    "퇴근 DLC 언제 출시됨",
+    "퇴사 버튼 어디 있죠?",
+  ],
+  lucky:[
+    "🍀 오늘은 운이 좋은 날! 아이스크림 사먹어~",
+    "⭐ 칭찬 받는 꿈을 꿨는데 실현됐다!",
+    "✨ 조기퇴근 찬스! 빛의 속도로 짐 싸기",
+    "🌟 어머 이런 행운이! 칸 3개 전진!",
+    "🎉 팀장님이 커피 쐈다! 이게 바로 복지!",
+    "💫 오늘은 왠지 퇴사 안 해도 될 것 같은 기분",
+  ],
+  wfh:[
+    "재택근무 = 침대에서 노트북 켜기",
+    "집에서 일한다고 일이 줄진 않지... 슬프다",
+    "파자마 차림으로 미팅 접속. 하의는 노코멘트",
+    "집이 사무실이 됐다. 이제 어디서 쉬지?",
+    "배경화면 설정하다 미팅 5분 지각. 전략적 지각",
+    "재택인데 야근... 이게 맞나? (아닌 것 같은데)",
+    "오늘도 영혼은 재택근무중",
+  ],
+  salary:[
+    "💰 월급날! 잠깐 부자가 된 기분 (카드값 전)",
+    "통장에 찍히는 순간이 유일한 위안...",
+    "월급 확인 → 카드값 확인 → 공허함 확인",
+    "세금 떼고 나면... 음... 아무튼 감사합니다",
+    "이 돈 받으려고 한 달을 버텼다. 뿌듯? 슬픔?",
+    "월급날 점심은 비싼 거 먹어. 딱 오늘만.",
+    "월급은 통장을 스쳐간다",
+    "월급: 생존 패스권",
+    "월급 로그아웃 언제됨",
+    "그래도 월급날은 사랑함",
+  ],
+  meeting:[
+    "또 회의냐... 일은 언제 하지",
+    "📢 회의 자료 만들다 정작 회의에서 발언 0회",
+    "이 회의 메일로 하면 안 됩니까...",
+    "3시간 회의 후 결론: '다음 회의 때 다시 논의'",
+    "카메라 끄고 밥 먹는 건 나만 하는 짓이 아니다",
+    "아이디어 냈다가 팀장님이 '나이스!' → 내 일 됨",
+    "회의: 결과 없음. 경험치 +0",
+  ],
+  vacation:[
+    "🌴 연차 발생! 근데 눈치 보여서 못 씀",
+    "연차 신청서 내는 순간 상사 눈빛이... 으...",
+    "'연차 쓰세요~' 하면서 눈치 주는 거 천재적임",
+    "연차 써도 카톡은 옵니다. 언제나. 항상.",
+    "연차는 전략자원이다.",
+  ],
+};
+
+const EVENT_CONFIG = {
+  start:    {icon:'🏁',title:'출발!',       effect:'원점 복귀!',    flash:'rgba(255,215,0,.3)',   sd:{stamina:5,  stress:-5, money:0}},
+  normal:   {icon:'💼',title:'평범한 하루', effect:'그냥 버팀...', flash:'rgba(100,200,100,.15)',sd:{stamina:-5, stress:5,  money:5}},
+  coffee:   {icon:'☕',title:'커피 수혈!',  effect:'+1칸 전진!',   flash:'rgba(111,78,55,.3)',   sd:{stamina:15, stress:-10,money:-3}},
+  boss:     {icon:'😤',title:'상사 호출!',  effect:'-1칸 후진!',   flash:'rgba(200,50,50,.3)',   sd:{stamina:-10,stress:20, money:0}},
+  overtime: {icon:'😭',title:'야근 확정!',  effect:'-3칸 후진!',   flash:'rgba(20,20,40,.4)',    sd:{stamina:-20,stress:30, money:10}},
+  lucky:    {icon:'🌟',title:'행운 발생!',  effect:'+3칸 전진!',   flash:'rgba(255,215,0,.4)',   sd:{stamina:10, stress:-15,money:20}},
+  wfh:      {icon:'🏠',title:'재택근무!',   effect:'+2칸 전진!',   flash:'rgba(26,35,126,.3)',   sd:{stamina:10, stress:-5, money:0}},
+  salary:   {icon:'💰',title:'월급날!',     effect:'스트레스 -20!',flash:'rgba(27,94,32,.35)',   sd:{stamina:20, stress:-20,money:30}},
+  meeting:  {icon:'📢',title:'회의폭탄!',   effect:'-2칸 후진!',   flash:'rgba(136,14,79,.3)',   sd:{stamina:-10,stress:15, money:0}},
+  vacation: {icon:'🌴',title:'연차 발생!',  effect:'+4칸 전진!',   flash:'rgba(2,119,189,.3)',   sd:{stamina:25, stress:-25,money:-5}},
+};
+
+// ─── 상태 ─────────────────────────────────────────────────────────────────────
+let playerMoveIdx = 0;
+let turn = 1;
+let stats = {stamina:80,stress:20,money:50};
+// 'idle' | 'busy' | 'showing'
+let gameState = 'idle';
+let usedQuotes = {};
+let logItems = [];
+let cellEls = [];
+let normalIconCounter = 0;
+
+function init() {
+  buildBoard();
+  buildPlayerChar();
+  setTimeout(()=>placePlayer(0,false), 80);
+  updateUI();
+}
+
+function buildBoard() {
+  const grid = document.getElementById('cellsGrid');
+  grid.innerHTML = ''; cellEls = []; normalIconCounter = 0;
+  const g2m = {};
+  MOVE_ORDER.forEach((gi,mi)=>{ g2m[gi]=mi; });
+  for(let i=0;i<100;i++){
+    const el = document.createElement('div');
+    if(!isEdge(i)){
+      el.className='cell empty';
+      cellEls.push(el); grid.appendChild(el); continue;
+    }
+    const mi = g2m[i];
+    const type = CELL_TYPES_SEQ[mi];
+    el.className = `cell ${CELL_COLORS_MAP[type]}`;
+    const icon  = type==='normal' ? NORMAL_ICONS[normalIconCounter++ % NORMAL_ICONS.length] : (CELL_ICONS_MAP[type]||'💼');
+    const label = CELL_LABELS_MAP[type]||'';
+    el.innerHTML = `
+      <span class="cell-num">${mi+1}</span>
+      <span class="cell-icon">${icon}</span>
+      ${label?`<span class="cell-label">${label}</span>`:''}
+      ${mi===0?'<span class="start-badge">START</span>':''}
+    `;
+    cellEls.push(el); grid.appendChild(el);
+  }
+}
+
+function buildPlayerChar() {
+  const svg = `<svg viewBox="0 0 40 55" xmlns="http://www.w3.org/2000/svg">
+    <rect x="13" y="39" width="6" height="13" rx="2" fill="#1565c0"/>
+    <rect x="21" y="39" width="6" height="13" rx="2" fill="#1565c0"/>
+    <rect x="11" y="18" width="18" height="22" rx="4" fill="#e53935"/>
+    <rect x="16" y="19" width="8" height="14" rx="2" fill="#fff"/>
+    <rect x="18.5" y="20" width="3" height="10" rx="1" fill="#ffd700"/>
+    <rect x="4" y="19" width="8" height="15" rx="3" fill="#e53935"/>
+    <rect x="28" y="19" width="8" height="15" rx="3" fill="#e53935"/>
+    <ellipse cx="8" cy="35" rx="4" ry="3.5" fill="#ffe0b2"/>
+    <ellipse cx="32" cy="35" rx="4" ry="3.5" fill="#ffe0b2"/>
+    <ellipse cx="20" cy="12" rx="10" ry="11" fill="#ffe0b2"/>
+    <circle cx="16" cy="11" r="2" fill="#333"/><circle cx="24" cy="11" r="2" fill="#333"/>
+    <circle cx="17" cy="10" r=".8" fill="#fff"/><circle cx="25" cy="10" r=".8" fill="#fff"/>
+    <path d="M16 16 Q20 18 24 16" stroke="#c0392b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="10" y="2" width="20" height="7" rx="4" fill="#2c1810"/>
+    <rect x="13" y="10" width="7" height="4" rx="2" fill="none" stroke="#555" stroke-width="1"/>
+    <rect x="20" y="10" width="7" height="4" rx="2" fill="none" stroke="#555" stroke-width="1"/>
+  </svg>`;
+  document.getElementById('playerChar').innerHTML = svg;
+  document.getElementById('bossPlayer').innerHTML = svg;
+}
+
+function getCellCenter(mi) {
+  const gi = MOVE_ORDER[mi];
+  const el = cellEls[gi];
+  if(!el) return {x:50,y:50};
+  const board = document.querySelector('.board');
+  const br = board.getBoundingClientRect();
+  const cr = el.getBoundingClientRect();
+  return {x: cr.left-br.left+cr.width/2, y: cr.top-br.top+cr.height/2};
+}
+
+function placePlayer(mi, animate=true) {
+  const {x,y} = getCellCenter(mi);
+  const ch = document.getElementById('playerChar');
+  ch.style.transition = animate ? 'top .45s cubic-bezier(.34,1.56,.64,1), left .45s cubic-bezier(.34,1.56,.64,1)' : 'none';
+  ch.style.left = x+'px'; ch.style.top = y+'px';
+}
+
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+function rollDice() {
+  // busy 중엔 무시 (이동 애니메이션 도중)
+  if(gameState === 'busy') return;
+  // 메시지 표시 중이면 닫고 즉시 굴림
+  if(gameState === 'showing') { dismissMsg(); }
+  gameState = 'busy';
+  const btn = document.getElementById('diceBtn');
+  btn.classList.add('rolling');
+  document.getElementById('diceHint').textContent = '굴리는 중...';
+  let count = 0;
+  const iv = setInterval(()=>{
+    btn.textContent = DICE_FACES[Math.floor(Math.random()*6)];
+    if(++count > 9){
+      clearInterval(iv);
+      const result = Math.floor(Math.random()*6)+1;
+      btn.textContent = DICE_FACES[result-1];
+      btn.classList.remove('rolling');
+      document.getElementById('diceHint').textContent = `🎲 ${result}칸 이동!`;
+      setTimeout(()=>movePlayer(result), 300);
+    }
+  }, 80);
+}
+
+function movePlayer(steps) {
+  animateMove(steps, 0, ()=>{
+    const type = CELL_TYPES_SEQ[playerMoveIdx];
+    applyEvent(type);
+  });
+}
+
+function animateMove(rem, delay, cb) {
+  if(rem===0){ cb(); return; }
+  setTimeout(()=>{
+    playerMoveIdx = (playerMoveIdx+1)%TOTAL_MOVES;
+    placePlayer(playerMoveIdx);
+    const gi = MOVE_ORDER[playerMoveIdx];
+    addTrail(cellEls[gi]); spawnParticles(cellEls[gi]);
+    animateMove(rem-1, 130, cb);
+  }, delay+150);
+}
+
+function moveBackward(steps, cb) {
+  let moved=0;
+  function step(){
+    if(moved>=steps){ cb(); return; }
+    setTimeout(()=>{ playerMoveIdx=((playerMoveIdx-1)+TOTAL_MOVES)%TOTAL_MOVES; placePlayer(playerMoveIdx); moved++; step(); }, 180);
+  }
+  step();
+}
+
+function addTrail(el) {
+  if(!el||el.classList.contains('empty')) return;
+  const t = document.createElement('div');
+  t.className='move-trail'; el.appendChild(t); setTimeout(()=>t.remove(), 700);
+}
+
+function spawnParticles(el) {
+  if(!el||el.classList.contains('empty')) return;
+  const r = el.getBoundingClientRect();
+  const ov = document.getElementById('eventOverlay');
+  const cols=['#ffd700','#ff6b9d','#7b4fa6','#2a9d8f','#e84444','#fff'];
+  for(let i=0;i<5;i++){
+    const p=document.createElement('div'); p.className='particle';
+    const s=5+Math.random()*6;
+    p.style.cssText=`width:${s}px;height:${s}px;background:${cols[Math.floor(Math.random()*cols.length)]};left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;--dx:${(Math.random()-.5)*60}px;--dy:${(Math.random()-.5)*60}px;`;
+    ov.appendChild(p); setTimeout(()=>p.remove(), 850);
+  }
+}
+
+function applyEvent(type) {
+  const cfg = EVENT_CONFIG[type]||EVENT_CONFIG.normal;
+  flashScreen(cfg.flash);
+  stats.stamina = Math.min(100,Math.max(0,stats.stamina+cfg.sd.stamina));
+  stats.stress  = Math.min(100,Math.max(0,stats.stress +cfg.sd.stress));
+  stats.money   = Math.min(100,Math.max(0,stats.money  +cfg.sd.money));
+
+  if(type==='coffee'){
+    setTimeout(()=>{ playerMoveIdx=(playerMoveIdx+1)%TOTAL_MOVES; placePlayer(playerMoveIdx); showCenterMsg(type,cfg); },350);
+  } else if(type==='boss'){
+    setTimeout(()=>{ playerMoveIdx=((playerMoveIdx-1)+TOTAL_MOVES)%TOTAL_MOVES; placePlayer(playerMoveIdx); showCenterMsg(type,cfg); },350);
+  } else if(type==='overtime'){
+    showBossAnimation(()=>moveBackward(3,()=>showCenterMsg(type,cfg)));
+  } else if(type==='meeting'){
+    showBossAnimation(()=>moveBackward(2,()=>showCenterMsg(type,cfg)));
+  } else if(type==='lucky'){
+    setTimeout(()=>animateMove(3,0,()=>showCenterMsg(type,cfg)),350);
+  } else if(type==='wfh'){
+    setTimeout(()=>animateMove(2,0,()=>showCenterMsg(type,cfg)),350);
+  } else if(type==='vacation'){
+    setTimeout(()=>animateMove(4,0,()=>showCenterMsg(type,cfg)),350);
+  } else {
+    showCenterMsg(type,cfg);
+  }
+}
+
+function flashScreen(color){
+  const ov=document.getElementById('eventOverlay');
+  const f=document.createElement('div');
+  f.className='event-flash'; f.style.background=color;
+  ov.appendChild(f); setTimeout(()=>f.remove(),500);
+}
+
+function showBossAnimation(cb){
+  const container=document.getElementById('bossAppear');
+  document.getElementById('bossPlayer').innerHTML=document.getElementById('playerChar').innerHTML;
+  container.style.display='block'; container.classList.add('active');
+  ['bossLeft','bossRight'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.animation='none'; void el.offsetWidth;
+    el.style.animation=id==='bossLeft'?'bossFromLeft 1.2s ease-in-out forwards':'bossFromRight 1.2s ease-in-out forwards';
+  });
+  setTimeout(()=>{ container.style.display='none'; container.classList.remove('active'); cb(); },1800);
+}
+
+function getQuote(type){
+  const pool=QUOTES[type]||QUOTES.normal;
+  if(!usedQuotes[type]) usedQuotes[type]=[];
+  const used=usedQuotes[type];
+  const avail=pool.map((_,i)=>i).filter(i=>!used.includes(i));
+  let idx;
+  if(!avail.length){ usedQuotes[type]=[]; idx=Math.floor(Math.random()*pool.length); }
+  else idx=avail[Math.floor(Math.random()*avail.length)];
+  usedQuotes[type].push(idx);
+  return pool[idx];
+}
+
+// ─── 중앙 메시지 표시 ─────────────────────────────────────────────────────────
+function showCenterMsg(type, cfg){
+  gameState = 'showing';
+
+  // 배경 전환
+  const eventBg = document.getElementById('centerEventBg');
+  const idleBg  = document.getElementById('centerBg');
+  const idle    = document.getElementById('centerIdle');
+  const msg     = document.getElementById('centerMsg');
+
+  eventBg.style.background = EVENT_BG[type] || EVENT_BG.normal;
+  eventBg.style.opacity = '1';
+  idleBg.style.opacity  = '0';
+  idle.style.opacity    = '0';
+
+  // 컨텐츠 업데이트
+  document.getElementById('msgIcon').textContent   = cfg.icon;
+  document.getElementById('msgTitle').textContent  = cfg.title;
+  document.getElementById('msgEffect').textContent = cfg.effect;
+  document.getElementById('msgQuote').textContent  = getQuote(type);
+
+  // 컨페티 (좋은 이벤트)
+  const confetti = document.getElementById('centerConfetti');
+  confetti.innerHTML = '';
+  if(['lucky','coffee','salary','vacation'].includes(type)){
+    const cols=['#ffd700','#ff6b9d','#7b4fa6','#2a9d8f','#87CEEB','#fff'];
+    for(let i=0;i<22;i++){
+      const c=document.createElement('div');
+      c.style.cssText=`position:absolute;width:${5+Math.random()*7}px;height:${5+Math.random()*7}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:50%;left:${Math.random()*100}%;top:${-10+Math.random()*30}%;animation:particleFly ${.6+Math.random()*.6}s ease-out ${Math.random()*.4}s forwards;--dx:${(Math.random()-.5)*80}px;--dy:${30+Math.random()*60}px;`;
+      confetti.appendChild(c);
+    }
+  }
+
+  // 표시
+  setTimeout(()=>{ msg.classList.add('visible'); }, 50);
+
+  // 플레이어 춤
+  document.getElementById('playerChar').classList.add('dancing');
+
+  addLog(`[${turn}턴] ${cfg.icon} ${cfg.title} — ${cfg.effect}`);
+  updateUI();
+}
+
+// dismissMsg: 메시지 닫기만 (턴 증가 + 상태 idle 복귀)
+function dismissMsg(){
+  if(gameState !== 'showing') return;
+  const msg = document.getElementById('centerMsg');
+  msg.classList.remove('visible');
+  document.getElementById('centerEventBg').style.opacity = '0';
+  document.getElementById('centerBg').style.opacity  = '1';
+  document.getElementById('centerIdle').style.opacity = '1';
+  document.getElementById('centerConfetti').innerHTML = '';
+  document.getElementById('playerChar').classList.remove('dancing');
+  turn++;
+  gameState = 'idle';
+  document.getElementById('diceHint').textContent = '클릭해서 굴려요!';
+  updateUI();
+}
+
+function confirmEvent(){
+  dismissMsg();
+}
+
+function updateUI(){
+  document.getElementById('barStamina').style.width = stats.stamina+'%';
+  document.getElementById('barStress').style.width  = stats.stress+'%';
+  document.getElementById('barMoney').style.width   = stats.money+'%';
+  document.getElementById('valStamina').textContent = stats.stamina;
+  document.getElementById('valStress').textContent  = stats.stress;
+  document.getElementById('valMoney').textContent   = stats.money;
+  document.getElementById('turnNum').textContent    = turn;
+  document.getElementById('posNum').textContent     = playerMoveIdx+1;
+}
+
+function addLog(msg){
+  logItems.push(msg);
+  if(logItems.length>20) logItems.shift();
+  const list=document.getElementById('logList');
+  list.innerHTML=logItems.map(l=>`<li>${l}</li>`).join('');
+  list.scrollTop=list.scrollHeight;
+}
+
+window.addEventListener('resize',()=>placePlayer(playerMoveIdx,false));
+window.addEventListener('load',()=>setTimeout(init,120));
+</script>
+</body>
+</html>
